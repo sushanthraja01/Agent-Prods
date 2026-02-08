@@ -8,6 +8,7 @@ import Loader from "./Loader";
 const Product = ({ prod, cart, setCart }) => {
   const token = localStorage.getItem("token");
   const debounceRef = useRef(null);
+  const thumbRef = useRef(null);
 
   if (!prod || !prod.images) return null;
 
@@ -74,35 +75,50 @@ const Product = ({ prod, cart, setCart }) => {
   };
 
   return (
-    <div className="bg-white shadow-lg rounded-xl p-5 flex flex-col h-[420px]">
+    <div className="shadow-lg bg-red-500 border border-blue-500 rounded-xl p-5 flex flex-col h-auto md:h-[600px] overflow-hidden">
 
       {/* IMAGE SECTION */}
-      <div className="flex gap-4 h-[300px]">
+      <div className="flex gap-4">
 
-        {/* Thumbnails */}
-        {images.length > 1 && (
-          <div className="flex flex-col gap-2">
-            {images.map((img, i) => (
-              <img
-                key={i}
-                src={img}
-                onClick={() => setActiveImage(img)}
-                className={`w-16 h-16 object-contain border rounded cursor-pointer
-                  ${activeImage === img ? "border-blue-600" : "border-gray-300"}`}
-              />
-            ))}
-          </div>
-        )}
+  {/* LEFT: Thumbnail Rail */}
+  {images.length > 1 && (
+    <div className="relative">
 
-        {/* Main Image */}
-        <div className="flex-1 flex items-center justify-center">
+      <div
+        ref={thumbRef}
+        className="flex flex-col gap-3 max-h-[520px] overflow-y-auto no-scrollbar pr-1"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+      >
+        {images.map((img, i) => (
           <img
-            src={activeImage}
-            alt={prod.name}
-            className="max-h-full object-contain"
+            key={i}
+            src={img}
+            onClick={() => setActiveImage(img)}
+            className={`w-20 h-20 object-cover border cursor-pointer rounded
+            ${activeImage === img ? "border-blue-600 border-2" : "border-gray-300"}`}
           />
-        </div>
+        ))}
       </div>
+
+      {/* Bottom Arrow Indicator */}
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 bg-white shadow rounded-full px-2 py-1">
+        ▼
+      </div>
+    </div>
+  )}
+
+  {/* RIGHT: Main Image */}
+  <div className="relative flex-1 bg-gray-100 flex items-center justify-center">
+
+    <img
+      src={activeImage}
+      alt={prod.name}
+      className="max-h-[550px] object-contain"
+    />
+
+  </div>
+</div>
+
 
       {/* CART BUTTON */}
       <div className="mt-4">
@@ -126,6 +142,8 @@ const Product = ({ prod, cart, setCart }) => {
     </div>
   );
 };
+
+
 
 
 const Productdetails = ({ currentvar, prod, setCurrentvar }) => {
@@ -174,7 +192,7 @@ const Productdetails = ({ currentvar, prod, setCurrentvar }) => {
       {prod.variants?.length > 0 && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-gray-800">
-            Available Variants
+            Variants : 
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
