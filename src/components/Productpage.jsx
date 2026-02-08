@@ -13,37 +13,29 @@ const Product = ({ prod, cart, setCart }) => {
   if (!prod || !prod.images) return null;
 
   const images = Array.isArray(prod.images)
-    ? prod.images.map(img => img.imageUrl)
+    ? prod.images.map(i => i.imageUrl)
     : [prod.images];
 
   const [activeImage, setActiveImage] = useState(images[0]);
-
   const qty = cart.find(i => i.prod === prod.id)?.qty || 0;
 
-  useEffect(() => {
-    return () => clearTimeout(debounceRef.current);
-  }, []);
+  useEffect(() => () => clearTimeout(debounceRef.current), []);
 
   const syncToServer = (updatedCart, newQty) => {
     if (!token) {
       localStorage.setItem("cart", JSON.stringify(updatedCart));
       return;
     }
-
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
-      try {
-        await fetch("http://localhost:5000/api/cart/qty", {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ prod: prod.id, qty: newQty }),
-        });
-      } catch (err) {
-        console.error("Cart sync failed", err);
-      }
+      await fetch("http://localhost:5000/api/cart/qty", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ prod: prod.id, qty: newQty })
+      });
     }, 5000);
   };
 
@@ -61,7 +53,6 @@ const Product = ({ prod, cart, setCart }) => {
 
   const removeprod = () => {
     if (!qty) return;
-
     const newQty = qty - 1;
     const updated =
       newQty === 0
@@ -75,76 +66,64 @@ const Product = ({ prod, cart, setCart }) => {
   };
 
   return (
-    <div className="shadow-lg bg-red-500 border border-blue-500 rounded-xl p-5 flex flex-col h-auto md:h-[600px] overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-xl border p-6 flex flex-col">
 
-      {/* IMAGE SECTION */}
-      <div className="flex gap-4">
+      {/* IMAGE + THUMBNAILS */}
+      <div className="flex flex-col md:flex-row gap-6">
 
-  {/* LEFT: Thumbnail Rail */}
-  {images.length > 1 && (
-    <div className="relative">
+        {/* THUMBNAILS */}
+        {images.length > 1 && (
+          <div
+            ref={thumbRef}
+            className="flex md:flex-col gap-3 md:h-[500px] overflow-x-auto md:overflow-y-auto"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
+            {images.map((img, i) => (
+              <img
+                key={i}
+                src={img}
+                onClick={() => setActiveImage(img)}
+                className={`w-20 h-20 object-cover rounded-lg border cursor-pointer
+                ${activeImage === img ? "border-blue-600 border-2" : "border-gray-300"}`}
+                style={{ userSelect: "none" }}
+              />
+            ))}
+          </div>
+        )}
 
-      <div
-        ref={thumbRef}
-        className="flex flex-col gap-3 max-h-[520px] overflow-y-auto no-scrollbar pr-1"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-      >
-        {images.map((img, i) => (
+        {/* MAIN IMAGE */}
+        <div className="flex-1 bg-gray-50 rounded-xl flex items-center justify-center h-[500px]">
           <img
-            key={i}
-            src={img}
-            onClick={() => setActiveImage(img)}
-            className={`w-20 h-20 object-cover border cursor-pointer rounded
-            ${activeImage === img ? "border-blue-600 border-2" : "border-gray-300"}`}
+            src={activeImage}
+            alt=""
+            className="max-h-full object-contain select-none"
           />
-        ))}
+        </div>
       </div>
 
-      {/* Bottom Arrow Indicator */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 bg-white shadow rounded-full px-2 py-1">
-        ▼
-      </div>
-    </div>
-  )}
-
-  {/* RIGHT: Main Image */}
-  <div className="relative flex-1 bg-gray-100 flex items-center justify-center">
-
-    <img
-      src={activeImage}
-      alt={prod.name}
-      className="max-h-[550px] object-contain"
-    />
-
-  </div>
-</div>
-
-
-      {/* CART BUTTON */}
-      <div className="mt-4">
+      {/* CART */}
+      <div className="mt-6 h-[56px]">
         {qty === 0 ? (
           <button
             onClick={addprod}
-            className="w-full bg-green-600 text-white py-2 rounded-lg font-semibold"
+            className="w-full h-full bg-green-600 text-white rounded-xl font-semibold"
           >
             ADD TO CART
           </button>
         ) : (
-          <div className="flex justify-between items-center bg-green-600 text-white rounded-lg px-4 py-2 font-bold">
+          <div className="w-full h-full flex justify-between items-center bg-green-600 text-white rounded-xl px-4 font-bold">
             <button onClick={removeprod}>
-              {qty === 1 ? <IonIcon icon={trashOutline} /> : "−"}
+              {qty === 1 ? <IonIcon icon={trashOutline} /> : "-"}
             </button>
             <span>{qty}</span>
             <button onClick={addprod}>+</button>
           </div>
         )}
       </div>
+
     </div>
   );
 };
-
-
-
 
 const Productdetails = ({ currentvar, prod, setCurrentvar }) => {
   if (!prod || !prod.id) return null;
