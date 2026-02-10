@@ -4,7 +4,7 @@ import CheckoutForm from "./CheckOutForm";
 
 const Cart = () => {
   const [cart, setCart] = useState([]);
-  const [products, setProducts] = useState([]);
+  const [variants, setVariants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [address, setAddress] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -24,10 +24,21 @@ const Cart = () => {
     }
   };
 
-  const fetchProducts = async () => {
-    const res = await fetch("https://fakestoreapi.com/products");
+  // Fetch all products with variants (your backend should ideally give cart + variant details)
+  const fetchVariants = async () => {
+    const res = await fetch("https://ae-sprotsbackend.onrender.com/products");
     const data = await res.json();
-    setProducts(data);
+
+    // Flatten all variants with product info
+    const flatVariants = data.flatMap(p =>
+      p.variants.map(v => ({
+        ...v,
+        productName: p.name,
+        productImage: p.images?.[0]?.imageUrl
+      }))
+    );
+
+    setVariants(flatVariants);
   };
 
   const fetchAddress = async () => {
@@ -42,7 +53,7 @@ const Cart = () => {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      await Promise.all([fetchCart(), fetchProducts(), fetchAddress()]);
+      await Promise.all([fetchCart(), fetchVariants(), fetchAddress()]);
       setLoading(false);
     };
     load();
@@ -51,46 +62,51 @@ const Cart = () => {
     };
   }, []);
 
+  // Merge cart with variant data
   const merge = (items) => {
-    if (!products.length) return [];
-    return products
-      .filter((p) => items.some((i) => i.prod === p.id))
-      .map((p) => {
-        const c = items.find((i) => i.prod === p.id);
-        return { ...p, quantity: c.qty };
-      });
+    return items.map(c => {
+      const v = variants.find(v => v.id === c.variantId);
+      if (!v) return null;
+      return { ...v, quantity: c.qty };
+    }).filter(Boolean);
   };
 
   const cartItems = merge(cart);
 
-  const updateQty = (productId, newQty) => {
+  const updateQty = (variantId, newQty) => {
     if (newQty < 1) return;
+
     const updated = cart.map((i) =>
-      i.prod === productId ? { ...i, qty: newQty } : i
+      i.variantId === variantId ? { ...i, qty: newQty } : i
     );
+
     setCart(updated);
+
     if (!token) {
       localStorage.setItem("cart", JSON.stringify(updated));
       return;
     }
-    if (debounceMap.current[productId]) {
-      clearTimeout(debounceMap.current[productId]);
+
+    if (debounceMap.current[variantId]) {
+      clearTimeout(debounceMap.current[variantId]);
     }
-    debounceMap.current[productId] = setTimeout(async () => {
+
+    debounceMap.current[variantId] = setTimeout(async () => {
       await fetch("http://localhost:5000/api/cart/qty", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ prod: productId, qty: newQty }),
+        body: JSON.stringify({ variantId, qty: newQty }),
       });
     }, 500);
   };
 
-  const removeItem = async (productId) => {
-    const updated = cart.filter((i) => i.prod !== productId);
+  const removeItem = async (variantId) => {
+    const updated = cart.filter((i) => i.variantId !== variantId);
     setCart(updated);
+
     if (token) {
       await fetch("http://localhost:5000/api/cart/remove", {
         method: "DELETE",
@@ -98,7 +114,7 @@ const Cart = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ prod: productId }),
+        body: JSON.stringify({ variantId }),
       });
     } else {
       localStorage.setItem("cart", JSON.stringify(updated));
@@ -153,15 +169,18 @@ const Cart = () => {
             <div className="p-4 border-b font-semibold">Cart Items</div>
             {cartItems.map((item) => (
               <div key={item.id} className="flex gap-4 p-4 border-b">
-                <img src={item.image} className="w-28 h-28 object-contain" />
+                <img src={item.productImage} className="w-28 h-28 object-contain" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium">{item.title}</p>
+                  <p className="text-sm font-medium">{item.productName}</p>
+                  <p className="text-xs text-gray-500">
+                    Size: {item.size} | Color: {item.color}
+                  </p>
                   <p className="text-lg font-semibold mt-1">
                     ₹{(item.price * item.quantity).toFixed(1)}
                   </p>
                   <div className="px-3 py-1 bg-green-700 flex items-center justify-between text-white font-bold rounded-lg min-w-[7.5rem] max-w-[7.5rem]">
                     <button onClick={() => updateQty(item.id, item.quantity - 1)} disabled={item.quantity === 1}>−</button>
-                    {item.quantity?<span></span>:<span></span>}
+                    <span>{item.quantity}</span>
                     <button onClick={() => updateQty(item.id, item.quantity + 1)}>+</button>
                   </div>
                   <button onClick={() => removeItem(item.id)} className="mt-3 text-sm font-semibold hover:text-red-600">

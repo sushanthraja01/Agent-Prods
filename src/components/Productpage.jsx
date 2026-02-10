@@ -4,8 +4,7 @@ import { IonIcon } from "@ionic/react";
 import { trashOutline } from "ionicons/icons";
 import Loader from "./Loader";
 
-
-const Product = ({ prod, cart, setCart }) => {
+const Product = ({ prod, cart, setCart, currentvar }) => {
   const token = localStorage.getItem("token");
   const debounceRef = useRef(null);
   const thumbRef = useRef(null);
@@ -17,7 +16,11 @@ const Product = ({ prod, cart, setCart }) => {
     : [prod.images];
 
   const [activeImage, setActiveImage] = useState(images[0]);
-  const qty = cart.find(i => i.prod === prod.id)?.qty || 0;
+
+  const getqty = () => {
+    const item = cart.find((i) => i.variantId === currentvar?.id);
+    return item ? item.qty : 0;
+  };
 
   useEffect(() => () => clearTimeout(debounceRef.current), []);
 
@@ -34,50 +37,85 @@ const Product = ({ prod, cart, setCart }) => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ prod: prod.id, qty: newQty })
+        body: JSON.stringify({ variantId: currentvar.id, qty: newQty })
       });
     }, 5000);
   };
 
   const addprod = () => {
+    if (!currentvar) return;
+
     const updated =
-      qty > 0
+      getqty() > 0
         ? cart.map(i =>
-            i.prod === prod.id ? { ...i, qty: i.qty + 1 } : i
+            i.variantId === currentvar.id ? { ...i, qty: i.qty + 1 } : i
           )
-        : [...cart, { prod: prod.id, qty: 1 }];
+        : [...cart, { variantId: currentvar.id, qty: 1 }];
 
     setCart(updated);
-    syncToServer(updated, qty + 1);
+    syncToServer(updated, getqty() + 1);
   };
 
   const removeprod = () => {
-    if (!qty) return;
-    const newQty = qty - 1;
+    if (!getqty() || !currentvar) return;
+    const newQty = getqty() - 1;
+
     const updated =
       newQty === 0
-        ? cart.filter(i => i.prod !== prod.id)
+        ? cart.filter(i => i.variantId !== currentvar.id)
         : cart.map(i =>
-            i.prod === prod.id ? { ...i, qty: newQty } : i
+            i.variantId === currentvar.id ? { ...i, qty: newQty } : i
           );
 
     setCart(updated);
     syncToServer(updated, newQty);
   };
 
-  return (
-    <div className="bg-white rounded-2xl shadow-xl border p-6 flex flex-col">
+  const isSoldOut = () => {
+    return currentvar?.stock===0??true;
+  };
 
-      {/* IMAGE + THUMBNAILS */}
+  const isCartGreaterStock = () => {
+    if(isSoldOut())return false
+    return getqty() > currentvar?.stock??0
+  }
+
+  const isLastItem = () => {
+    if(isSoldOut())return false
+    if(isCartGreaterStock())return false
+    return getqty() === currentvar?.stock ?? 0
+  }
+
+  return (
+    <div className="bg-white rounded-2xl shadow-xl border-0 p-6 flex flex-col">
+
       <div className="flex flex-col md:flex-row gap-6">
 
-        {/* THUMBNAILS */}
         {images.length > 1 && (
           <div
             ref={thumbRef}
             className="flex md:flex-col gap-3 md:h-[500px] overflow-x-auto md:overflow-y-auto"
             style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
           >
+
+            {isSoldOut() && (
+                <span className="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
+                  SELECTED VARIANT IS SOLD OUT 
+                </span>
+            )}
+
+            {isCartGreaterStock() && (
+                <span className="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
+                  Only {currentvar.stock} items are available in this variant
+                </span>
+            )}
+
+            {isLastItem() && (
+                <span className="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
+                  Only {currentvar.stock} items are available in this variant
+                </span>
+            )}
+
             {images.map((img, i) => (
               <img
                 key={i}
@@ -91,7 +129,6 @@ const Product = ({ prod, cart, setCart }) => {
           </div>
         )}
 
-        {/* MAIN IMAGE */}
         <div className="flex-1 bg-gray-50 rounded-xl flex items-center justify-center h-[500px]">
           <img
             src={activeImage}
@@ -101,9 +138,8 @@ const Product = ({ prod, cart, setCart }) => {
         </div>
       </div>
 
-      {/* CART */}
       <div className="mt-6 h-[56px]">
-        {qty === 0 ? (
+        {getqty() === 0 ? (
           <button
             onClick={addprod}
             className="w-full h-full bg-green-600 text-white rounded-xl font-semibold"
@@ -113,10 +149,10 @@ const Product = ({ prod, cart, setCart }) => {
         ) : (
           <div className="w-full h-full flex justify-between items-center bg-green-600 text-white rounded-xl px-4 font-bold">
             <button onClick={removeprod}>
-              {qty === 1 ? <IonIcon icon={trashOutline} /> : "-"}
+              {getqty() === 1 ? <IonIcon icon={trashOutline} /> : "-"}
             </button>
-            <span>{qty}</span>
-            <button onClick={addprod}>+</button>
+            <span>{getqty()}</span>
+            <button className={(isSoldOut() || isLastItem() || isCartGreaterStock())?"cursor-not-allowed opacity-40":"cursor-pointer"} disabled={(isSoldOut() || isLastItem() || isCartGreaterStock())} onClick={addprod}>+</button>
           </div>
         )}
       </div>
@@ -128,10 +164,10 @@ const Product = ({ prod, cart, setCart }) => {
 const Productdetails = ({ currentvar, prod, setCurrentvar }) => {
   if (!prod || !prod.id) return null;
 
+
   return (
     <div className="bg-white shadow-2xl rounded-2xl p-6 md:p-8 space-y-6 w-full">
-      
-      {/* Product Title */}
+
       <div className="space-y-2">
         <h2 className="text-2xl md:text-3xl font-bold text-gray-800">
           {prod.name}
@@ -149,7 +185,6 @@ const Productdetails = ({ currentvar, prod, setCurrentvar }) => {
         </small>
       </div>
 
-      {/* Category */}
       <p className="text-sm text-gray-500">
         Category:{" "}
         <span className="capitalize text-gray-700">
@@ -157,7 +192,6 @@ const Productdetails = ({ currentvar, prod, setCurrentvar }) => {
         </span>
       </p>
 
-      {/* Rating */}
       <div className="flex items-center gap-4">
         <span className="bg-yellow-400 text-gray-900 px-3 py-1 rounded-full text-sm font-semibold shadow">
           ⭐ {prod.rating}
@@ -167,28 +201,49 @@ const Productdetails = ({ currentvar, prod, setCurrentvar }) => {
         </span>
       </div>
 
-      {/* Variants */}
       {prod.variants?.length > 0 && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-gray-800">
             Variants : 
           </h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <div className={"grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"}>
             {prod.variants.map((variant) => {
               const isActive = variant === currentvar;
+              const isSoldOut = variant.stock === 0;
 
               return (
                 <div
                   key={variant.id}
-                  onClick={() => setCurrentvar(variant)}
+                  title={isSoldOut ? "SOLD OUT" : ""}
+                  onClick={() => {
+                    if (isSoldOut) return;
+                    setCurrentvar(variant);
+                  }}
                   className={`
-                    cursor-pointer rounded-xl p-4 border transition-all
+                    rounded-xl p-4 border transition-all select-none
+                    ${isSoldOut
+                      ? "opacity-50 bg-gray-300 cursor-not-allowed"
+                      : "cursor-pointer"}
                     ${isActive
                       ? "border-blue-600 bg-blue-50 text-blue-900 shadow-md scale-[1.02]"
-                      : "border-gray-300 hover:border-blue-400 hover:shadow"}
+                      : "border-gray-300"}
                   `}
                 >
+                <div
+                  key={variant.id}
+                  className="relative"
+                >
+                  {isSoldOut && (<><span className="absolute hidden group-hover:block text-xs bg-red-600 text-white px-2 py-1 rounded top-2 right-2">
+                      SOLD OUT
+                    </span>
+                    <span className="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
+                      SOLD OUT
+                    </span></>
+                    
+                  )}
+                </div>
+
                   <p className="text-sm font-medium">
                     Colour: <span className="font-semibold">{variant.color}</span>
                   </p>
@@ -201,10 +256,9 @@ const Productdetails = ({ currentvar, prod, setCurrentvar }) => {
           </div>
 
           <div className="py-3">
-            <p className=""><span className="text-gray-500">Specifications</span>&nbsp;&nbsp;&nbsp;&nbsp;Size:{currentvar.size}&nbsp;&nbsp;|&nbsp;&nbsp;Colour:{currentvar.color}</p>
+            <p className=""><span className="text-gray-500">Specifications</span>&nbsp;&nbsp;&nbsp;&nbsp;Size:{currentvar?.size}&nbsp;&nbsp;|&nbsp;&nbsp;Colour:{currentvar?.color}</p>
           </div>
 
-          {/* Product Meta Info */}
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-gray-700 border border-gray-200 rounded-lg">
               <tbody>
@@ -245,7 +299,6 @@ const Productdetails = ({ currentvar, prod, setCurrentvar }) => {
   );
 };
 
-
 const SuggestedProducts = ({ cart, setCart }) => {
   const [sp, setSp] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -285,13 +338,12 @@ const SuggestedProducts = ({ cart, setCart }) => {
   );
 };
 
-/* ==================== Product Page ==================== */
 const Productpage = () => {
   const { id } = useParams();
   const [product, setProduct] = useState({});
   const [loading, setLoading] = useState(false);
-  const [cart, setCart] = useState([]);
-  const [currentvar,setCurrentvar] = useState()
+  const [cart, setCart] = useState(()=>JSON.parse(localStorage.getItem("cart")||"[]"));
+  const [currentvar,setCurrentvar] = useState();
 
   useEffect(() => {
     const load = async () => {
@@ -301,8 +353,7 @@ const Productpage = () => {
       );
       const data = await res.json();
       setProduct(data);
-      console.log(data.variants[0]);
-      setCurrentvar(data.variants[0])
+      setCurrentvar(data.variants[0]);
       setLoading(false);
     };
     load();
@@ -313,31 +364,35 @@ const Productpage = () => {
   return (
   <div className="w-full px-6">
 
-    {/* PRODUCT + DETAILS WRAPPER */}
     <div className="flex flex-col lg:flex-row gap-6">
 
-      {/* LEFT: Sticky Product Image */}
       <div className="lg:w-1/3">
         <div className="sticky top-24">
-          <Product prod={product} cart={cart} setCart={setCart} />
+          <Product 
+            prod={product} 
+            cart={cart} 
+            setCart={setCart}
+            currentvar={currentvar}
+          />
         </div>
       </div>
 
-      {/* RIGHT: Scrollable Product Details */}
       <div className="lg:w-2/3">
-        <Productdetails prod={product} currentvar={currentvar} setCurrentvar={setCurrentvar} />
+        <Productdetails 
+          prod={product} 
+          currentvar={currentvar} 
+          setCurrentvar={setCurrentvar} 
+        />
       </div>
 
     </div>
 
-    {/* SUGGESTED PRODUCTS (starts AFTER image sticky ends) */}
     <div className="mt-20">
       <SuggestedProducts cart={cart} setCart={setCart} />
     </div>
 
   </div>
 );
-
 };
 
 export default Productpage;
