@@ -72,93 +72,95 @@ const Product = ({ prod, cart, setCart, currentvar }) => {
   };
 
   const isSoldOut = () => {
-    return currentvar?.stock===0??true;
+    return currentvar?.stock===0
   };
 
   const isCartGreaterStock = () => {
     if(isSoldOut())return false
-    return getqty() > currentvar?.stock??0
+    return getqty() > currentvar?.stock
   }
 
   const isLastItem = () => {
     if(isSoldOut())return false
     if(isCartGreaterStock())return false
-    return getqty() === currentvar?.stock ?? 0
+    return getqty() === currentvar?.stock
   }
 
-  return (
-    <div className="bg-white rounded-2xl shadow-xl border-0 p-6 flex flex-col">
+return (
+  <div className="bg-white rounded-2xl shadow-xl border-0 p-6 flex flex-col">
 
-      <div className="flex flex-col md:flex-row gap-6">
+    <div className="flex flex-col md:flex-row gap-6">
 
-        {images.length > 1 && (
-          <div
-            ref={thumbRef}
-            className="flex md:flex-col gap-3 md:h-[500px] overflow-x-auto md:overflow-y-auto"
-            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-          >
+      <div className="flex-1 bg-gray-50 rounded-xl flex items-center justify-center h-[500px] order-1 md:order-2">
+        <img
+          src={activeImage}
+          alt=""
+          className="max-h-full object-contain select-none"
+        />
+      </div>
 
-            {isSoldOut() && (
-                <span className="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
-                  SELECTED VARIANT IS SOLD OUT 
-                </span>
-            )}
+      {images.length > 1 && (
+        <div
+          ref={thumbRef}
+          className="flex md:flex-col gap-3 md:h-[500px] overflow-x-auto md:overflow-y-auto order-2 md:order-1"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        >
+          {isSoldOut() && (
+              <span className="select-none absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
+                SELECTED VARIANT IS SOLD OUT 
+              </span>
+          )}
 
-            {isCartGreaterStock() && (
-                <span className="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
-                  Only {currentvar.stock} items are available in this variant
-                </span>
-            )}
+          {isCartGreaterStock() && (
+              <span className="select-none absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
+                Only {currentvar.stock} items are available in this variant
+              </span>
+          )}
 
-            {isLastItem() && (
-                <span className="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
-                  Only {currentvar.stock} items are available in this variant
-                </span>
-            )}
+          {isLastItem() && (
+              <span className="select-none absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
+                Only {currentvar.stock} items are available in this variant
+              </span>
+          )}
 
-            {images.map((img, i) => (
-              <img
-                key={i}
-                src={img}
-                onClick={() => setActiveImage(img)}
-                className={`w-20 h-20 object-cover rounded-lg border cursor-pointer
-                ${activeImage === img ? "border-blue-600 border-2" : "border-gray-300"}`}
-                style={{ userSelect: "none" }}
-              />
-            ))}
-          </div>
-        )}
-
-        <div className="flex-1 bg-gray-50 rounded-xl flex items-center justify-center h-[500px]">
-          <img
-            src={activeImage}
-            alt=""
-            className="max-h-full object-contain select-none"
-          />
+          {images.map((img, i) => (
+            <img
+              key={i}
+              src={img}
+              onClick={() => setActiveImage(img)}
+              className={`w-20 h-20 object-cover rounded-lg border cursor-pointer
+              ${activeImage === img ? "border-blue-600 border-2" : "border-gray-300"}`}
+              style={{ userSelect: "none" }}
+            />
+          ))}
         </div>
-      </div>
-
-      <div className="mt-6 h-[56px]">
-        {getqty() === 0 ? (
-          <button
-            onClick={addprod}
-            className="w-full h-full bg-green-600 text-white rounded-xl font-semibold"
-          >
-            ADD TO CART
-          </button>
-        ) : (
-          <div className="w-full h-full flex justify-between items-center bg-green-600 text-white rounded-xl px-4 font-bold">
-            <button onClick={removeprod}>
-              {getqty() === 1 ? <IonIcon icon={trashOutline} /> : "-"}
-            </button>
-            <span>{getqty()}</span>
-            <button className={(isSoldOut() || isLastItem() || isCartGreaterStock())?"cursor-not-allowed opacity-40":"cursor-pointer"} disabled={(isSoldOut() || isLastItem() || isCartGreaterStock())} onClick={addprod}>+</button>
-          </div>
-        )}
-      </div>
+      )}
 
     </div>
-  );
+
+    <div className="mt-6 h-[56px]">
+      {getqty() === 0 ? (
+        <button
+          onClick={addprod}
+          className="w-full h-full bg-green-600 text-white rounded-xl font-semibold"
+        >
+          ADD TO CART
+        </button>
+      ) : (
+        <div className="w-full h-full flex justify-between items-center bg-green-600 text-white rounded-xl px-4 font-bold">
+          <button onClick={removeprod}>
+            {getqty() === 1 ? <IonIcon icon={trashOutline} /> : "-"}
+          </button>
+          <span>{getqty()}</span>
+          <button className={(isSoldOut() || isLastItem() || isCartGreaterStock())?"cursor-not-allowed opacity-40":"cursor-pointer"} disabled={(isSoldOut() || isLastItem() || isCartGreaterStock())} onClick={addprod}>+</button>
+        </div>
+      )}
+    </div>
+
+  </div>
+);
+
+  
 };
 
 const Productdetails = ({ currentvar, prod, setCurrentvar }) => {
