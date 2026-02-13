@@ -228,6 +228,10 @@ const Productdetails = ({ currentvar, prod, setCurrentvar, setCurrentvarimages }
                     if (isSoldOut) return;
                     setCurrentvar(variant);
                     setCurrentvarimages(prod.images.filter((img) => img.sku === variant.sku))
+                    window.scrollTo({
+                      top: 0,
+                      behavior: "smooth" 
+                    });
                   }}
                   className={`
                     rounded-xl p-4 border transition-all select-none
