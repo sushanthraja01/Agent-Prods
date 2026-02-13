@@ -148,25 +148,13 @@ const Products = () => {
               key={product.id}
               className="relative bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col hover:scale-[1.02] transition-transform"
             >
-              
-              {isSoldOut(product.id) && (
-                <span className="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
-                  SOLD OUT
-                </span>
-              )}
 
-              {isOnlyOneLeft(product.id) && (
-                <span className="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
-                  Only {getavailablestock(product.id)} Product available
-                </span>
-              )}
-
-              <div className="h-56 w-full bg-gray-100 flex items-center justify-center p-4">
-                {product.images.length>=1?<img
+              <div className="h-56 w-full bg-gray-100 flex items-center justify-center p-4 cursor-pointer">
+                {product.images.length>=1?<img onClick={()=>nav(`/product/${product.id}`)}
                   src={product.images[1].imageUrl}
                   alt={product.name}
                   className="max-h-full object-contain"
-                />:<img alt={product.name} />}
+                />:<img onClick={()=>nav(`/product/${product.id}`)} alt={product.name} />}
               </div>
 
               <div className="flex flex-col flex-grow p-4">

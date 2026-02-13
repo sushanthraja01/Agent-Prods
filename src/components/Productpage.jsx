@@ -4,18 +4,25 @@ import { IonIcon } from "@ionic/react";
 import { trashOutline } from "ionicons/icons";
 import Loader from "./Loader";
 
-const Product = ({ prod, cart, setCart, currentvar }) => {
+const Product = ({ prod, cart, setCart, currentvar, currentvarimages }) => {
   const token = localStorage.getItem("token");
   const debounceRef = useRef(null);
   const thumbRef = useRef(null);
 
   if (!prod || !prod.images) return null;
+  const [images, setImages] = useState([]);
+  const [activeImage, setActiveImage] = useState(null);
 
-  const images = Array.isArray(prod.images)
-    ? prod.images.map(i => i.imageUrl)
-    : [prod.images];
+  useEffect(() => {
+    const imgs = Array.isArray(currentvarimages)
+      ? currentvarimages.map(i => i.imageUrl)
+      : currentvarimages
+      ? [currentvarimages]
+      : [];
 
-  const [activeImage, setActiveImage] = useState(images[0]);
+    setImages(imgs);
+    setActiveImage(imgs[0] || null);
+  }, [currentvarimages]);
 
   const getqty = () => {
     const item = cart.find((i) => i.variantId === currentvar?.id);
@@ -163,9 +170,8 @@ const Product = ({ prod, cart, setCart, currentvar }) => {
   
 };
 
-const Productdetails = ({ currentvar, prod, setCurrentvar }) => {
+const Productdetails = ({ currentvar, prod, setCurrentvar, setCurrentvarimages }) => {
   if (!prod || !prod.id) return null;
-
 
   return (
     <div className="bg-white shadow-2xl rounded-2xl p-6 md:p-8 space-y-6 w-full">
@@ -221,6 +227,7 @@ const Productdetails = ({ currentvar, prod, setCurrentvar }) => {
                   onClick={() => {
                     if (isSoldOut) return;
                     setCurrentvar(variant);
+                    setCurrentvarimages(prod.images.filter((img) => img.sku === variant.sku))
                   }}
                   className={`
                     rounded-xl p-4 border transition-all select-none
@@ -346,6 +353,7 @@ const Productpage = () => {
   const [loading, setLoading] = useState(false);
   const [cart, setCart] = useState(()=>JSON.parse(localStorage.getItem("cart")||"[]"));
   const [currentvar,setCurrentvar] = useState();
+  const [currentvarimages,setCurrentvarimages] = useState();
 
   useEffect(() => {
     const load = async () => {
@@ -356,6 +364,7 @@ const Productpage = () => {
       const data = await res.json();
       setProduct(data);
       setCurrentvar(data.variants[0]);
+      setCurrentvarimages(data.images.filter((img) => img.sku === data.variants[0].sku))
       setLoading(false);
     };
     load();
@@ -375,6 +384,7 @@ const Productpage = () => {
             cart={cart} 
             setCart={setCart}
             currentvar={currentvar}
+            currentvarimages={currentvarimages}
           />
         </div>
       </div>
@@ -384,6 +394,7 @@ const Productpage = () => {
           prod={product} 
           currentvar={currentvar} 
           setCurrentvar={setCurrentvar} 
+          setCurrentvarimages={setCurrentvarimages}
         />
       </div>
 
