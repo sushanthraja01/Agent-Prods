@@ -150,11 +150,14 @@ const Products = () => {
             >
 
               <div className="h-56 w-full bg-gray-100 flex items-center justify-center p-4 cursor-pointer">
-                {product.images.length>=1?<img onClick={()=>nav(`/product/${product.id}`)}
+                {product.images.length>=1?<img onClick={()=>{nav(`/product/${product.id}`);window.scrollTo({top: 0,behavior: "smooth" });}}
                   src={product.images[1].imageUrl}
                   alt={product.name}
                   className="max-h-full object-contain"
-                />:<img onClick={()=>nav(`/product/${product.id}`)} alt={product.name} />}
+                />:<img onClick={()=>{nav(`/product/${product.id}`);window.scrollTo({
+    top: 0,
+    behavior: "smooth" // optional (for smooth scrolling)
+  });}} alt={product.name} />}
               </div>
 
               <div className="flex flex-col flex-grow p-4">
@@ -164,7 +167,10 @@ const Products = () => {
 
                 <h2
                   className="font-semibold text-lg line-clamp-2 cursor-pointer hover:underline"
-                  onClick={() => nav(`/product/${product.id}`)}
+                  onClick={() => {nav(`/product/${product.id}`);window.scrollTo({
+    top: 0,
+    behavior: "smooth" // optional (for smooth scrolling)
+  });}}
                 >
                   {product.name}
                 </h2>
