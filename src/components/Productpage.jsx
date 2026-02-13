@@ -8,6 +8,7 @@ const Product = ({ prod, cart, setCart, currentvar, currentvarimages }) => {
   const token = localStorage.getItem("token");
   const debounceRef = useRef(null);
   const thumbRef = useRef(null);
+  const nav = useNavigate();
 
   if (!prod || !prod.images) return null;
   const [images, setImages] = useState([]);
@@ -162,6 +163,15 @@ const Product = ({ prod, cart, setCart, currentvar, currentvarimages }) => {
             <button className={(isSoldOut() || isLastItem() || isCartGreaterStock())?"cursor-not-allowed opacity-40":"cursor-pointer"} disabled={(isSoldOut() || isLastItem() || isCartGreaterStock())} onClick={addprod}>+</button>
           </div>
         )}
+      </div>
+
+      <div className="mt-6 h-[56px]">
+          <button
+            onClick={()=>nav('/cart')}
+            className="w-full h-full bg-green-600 text-white rounded-xl font-semibold cursor-pointer"
+          >
+            GO TO CART
+          </button>
       </div>
 
     </div>
